@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Evidence Locker - Firestore CRUD</title>
+
+  <style>
+    body { font-family: Arial; padding: 20px; }
+    input, select { padding: 8px; margin: 5px 0; width: 250px; }
+    button { padding: 8px 12px; margin: 5px; cursor: pointer; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
+    th { background: #f2f2f2; }
+  </style>
+</head>
+
+<body>
+
+  <h2>🔐 Evidence Locker (Cloud Firestore CRUD)</h2>
+
+  <h3>➕ Add New Evidence</h3>
+
+  <label>Document ID (Ex: case_003)</label><br>
+  <input type="text" id="docId" placeholder="case_003" /><br>
+
+  <label>Clue Type</label><br>
+  <input type="text" id="clueType" placeholder="Fingerprint / DNA / CCTV" /><br>
+
+  <label>Is Verified?</label><br>
+  <select id="isVerified">
+    <option value="true">true</option>
+    <option value="false">false</option>
+  </select><br>
+
+  <button onclick="addEvidence()">Add Evidence</button>
+  <button onclick="loadEvidence()">Refresh List</button>
+
+  <h3>📋 Evidence Records</h3>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Document ID</th>
+        <th>Clue Type</th>
+        <th>Verified</th>
+        <th>Timestamp</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="evidenceTable"></tbody>
+  </table>
+
+  <script type="module">
+    // ✅ Firebase SDK imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      setDoc,
+      updateDoc,
+      deleteDoc,
+      serverTimestamp
+    } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+   // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyCX2cT-IWeUqYMsrHtXME82lYOYjyReVyg",
+  authDomain: "firestudio-23745.firebaseapp.com",
+  projectId: "firestudio-23745",
+  storageBucket: "firestudio-23745.firebasestorage.app",
+  messagingSenderId: "75967600391",
+  appId: "1:75967600391:web:f06eae865135aa8f43d7a2",
+  measurementId: "G-D0NQ4FCGF9"
+};
+
+    // ✅ 2) Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // ✅ Create / Add Evidence Document
+    window.addEvidence = async function () {
+      const docId = document.getElementById("docId").value.trim();
+      const clueType = document.getElementById("clueType").value.trim();
+      const isVerified = document.getElementById("isVerified").value === "true";
+
+      if (!docId || !clueType) {
+        alert("Please enter Document ID and Clue Type!");
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, "evidence", docId), {
+          clue_type: clueType,
+          is_verified: isVerified,
+          timestamp: serverTimestamp()
+        });
+
+        alert("✅ Evidence added successfully!");
+        document.getElementById("docId").value = "";
+        document.getElementById("clueType").value = "";
+
+        loadEvidence();
+      } catch (error) {
+        console.error(error);
+        alert("❌ Error adding evidence");
+      }
+    };
+
+    // ✅ Read / Display Evidence Documents
+    window.loadEvidence = async function () {
+      const evidenceTable = document.getElementById("evidenceTable");
+      evidenceTable.innerHTML = "";
+
+      const querySnapshot = await getDocs(collection(db, "evidence"));
+
+      querySnapshot.forEach((d) => {
+        const data = d.data();
+
+        // convert timestamp
+        let timeText = "N/A";
+        if (data.timestamp && data.timestamp.toDate) {
+          timeText = data.timestamp.toDate().toLocaleString();
+        }
+
+        evidenceTable.innerHTML += `
+          <tr>
+            <td>${d.id}</td>
+            <td>
+              <input id="clue_${d.id}" value="${data.clue_type ?? ""}" />
+            </td>
+            <td>
+              <select id="ver_${d.id}">
+                <option value="true" ${data.is_verified ? "selected" : ""}>true</option>
+                <option value="false" ${!data.is_verified ? "selected" : ""}>false</option>
+              </select>
+            </td>
+            <td>${timeText}</td>
+            <td>
+              <button onclick="updateEvidence('${d.id}')">Update</button>
+              <button onclick="removeEvidence('${d.id}')">Delete</button>
+            </td>
+          </tr>
+        `;
+      });
+    };
+
+    // ✅ Update Evidence Document
+    window.updateEvidence = async function (id) {
+      const newClue = document.getElementById(`clue_${id}`).value.trim();
+      const newVerified = document.getElementById(`ver_${id}`).value === "true";
+
+      try {
+        await updateDoc(doc(db, "evidence", id), {
+          clue_type: newClue,
+          is_verified: newVerified
+        });
+
+        alert("✅ Updated successfully!");
+        loadEvidence();
+      } catch (error) {
+        console.error(error);
+        alert("❌ Error updating");
+      }
+    };
+
+    // ✅ Delete Evidence Document
+    window.removeEvidence = async function (id) {
+      const confirmDelete = confirm(`Are you sure you want to delete ${id}?`);
+      if (!confirmDelete) return;
+
+      try {
+        await deleteDoc(doc(db, "evidence", id));
+        alert("🗑️ Deleted successfully!");
+        loadEvidence();
+      } catch (error) {
+        console.error(error);
+        alert("❌ Error deleting");
+      }
+    };
+
+    // Load automatically when page opens
+    loadEvidence();
+  </script>
+
+</body>
+</html>
