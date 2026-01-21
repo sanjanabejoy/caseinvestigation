@@ -1,7 +1,7 @@
-Cloud Firestore (Firebase)
+## Cloud Firestore (Firebase)
 Firestore is a NoSQL document database provided by Google Firebase.
 
-What is a NoSQL Database?
+# What is a NoSQL Database?
 A NoSQL database stores data not in the form of tables (rows and columns) like SQL databases. Instead, it stores data in flexible formats like documents (JSON-like). Firestore organizes data as: Collections → Documents → Fields.
 
 NoSQL is useful for modern applications because it is scalable, fast, and flexible.
